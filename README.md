@@ -5,3 +5,5 @@ The intention of this application is to demonstrate a Productivity application f
 Upload your audio file and view the transcription to the right! Keep your transcriptions in your own personal journal, and then use the webapp [text_2_chatbot_journal](https://github.com/CodeSolutions2/text_2_chatbot_journal) to chat with a chatbot/your **digital twin** with your journal using your OpenAI account (at the moment). 
 
 Ask yourself questions about the things you talked about in your journal to obtain more clarity and insight in your life! 
+
+[Application in progress]
