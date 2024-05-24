@@ -98,7 +98,7 @@ var max_loops = 10;
 document.getElementById("upload_file").addEventListener("change", previewInput, false);
 
 // const audioContext = {};
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 	
 
 async function previewInput(event) {
