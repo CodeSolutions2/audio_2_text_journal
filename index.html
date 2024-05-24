@@ -43,7 +43,7 @@
 
 <h3>C. View an audio file [audio display]</h3>
 <!-- <audio controls id="audio_input_display" style="display:none"><source id="audio_source_input_display" src="" type="audio/mpeg"></audio> -->
-<audio controls id="audio_input_display_js" style="display:none"></audio>
+<audio controls id="audio_input_display_js" preload="auto" style="display:none"></audio>
 	
 <br>
 
@@ -176,6 +176,9 @@ async function previewInput(event) {
 				// Create a url for the data object
 				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob);
 
+				// Attached the decoded_arraybuffer_blob_url to the audioElement
+				document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+
 				// ----------------------------
 
 				// Set path to fetch mp3 file from PC using decoded_arraybuffer_blob_url
@@ -300,8 +303,6 @@ async function transcribe_audio() {
 			// Make the audio player visible
 			document.getElementById("audio_input_display_js").style.display = "block"; 
 
-			
-			
 			// Try to get the audio file from the DOM
 			console.log("audio: ", document.getElementById("audio_input_display_js"))
 
@@ -420,13 +421,26 @@ async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
 
 // Try 3: base64_string -> arraybuffer -> decoded_arraybuffer
 async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
-	
+
+	// TypeError: Blob constructor: Argument 1 can't be converted to a sequence.
+	// Where is the error?
 	await start_processing_notification()
-		.then(async function() { return await fetch(file_object.base64_string); })
+		.then(async function() { 
+			console.log('base64_string in transcription: ', file_object.base64_string);
+			return await fetch(file_object.base64_string); 
+		})
 		.then(response => response.arrayBuffer())
-		.then(async function(arraybuffer) { audioContext = new AudioContext(); return audioContext.decodeAudioData(arraybuffer); })
-		.then(async function(decoded_arraybuffer) { return new Blob(decoded_arraybuffer, {type: "audio/mp3"}); })
+		.then(async function(arraybuffer) { 
+			console.log('arraybuffer in transcription: ', arraybuffer);
+			audioContext = new AudioContext(); 
+			return audioContext.decodeAudioData(arraybuffer); 
+		})
+		.then(async function(decoded_arraybuffer) { 
+			console.log('decoded_arraybuffer in transcription: ', decoded_arraybuffer);
+			return new Blob(decoded_arraybuffer, {type: "audio/mp3"}); 
+		})
 		.then(async function(decoded_arraybuffer_blob) { 
+			console.log('decoded_arraybuffer_blob in transcription: ', decoded_arraybuffer_blob);
 			return new File ([decoded_arraybuffer_blob], file_object.name, {type: "audio/mp3"});
 		})
 		.then(async function(file_blob_object) { 
