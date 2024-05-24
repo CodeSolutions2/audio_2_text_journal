@@ -169,12 +169,6 @@ async function previewInput(event) {
 				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  
 				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob); // Create a url for the data object
 
-				// Try 1
-				// Attached the decoded_arraybuffer_blob_url to the audioElement
-				// document.getElementById("audio_input_display_js").src = decoded_audiobuffer_blob_url;
-				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded. index.html
-				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded, error: Error Code: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
-				// Problem: making the blobURL re-encodes the decoded_arraybuffer so the media player can not read the data from the src blob link 
 				// Try 2
 				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
 				console.log('channelData: ', channelData);
@@ -231,7 +225,9 @@ async function previewInput(event) {
 				source.connect(audioContext.destination);
 
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
-				source.start(0);
+				// source.start(0);
+
+				document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
 			})
     
 	}
@@ -333,7 +329,7 @@ async function transcribe_audio() {
 				
 			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
 				if (dict_out['model_name'] == 'openai') {
-					await call_openai_model_try0(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+					await call_openai_model_try3(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
 						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
 				} else {
 					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
@@ -419,11 +415,15 @@ async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
 			// It does not create the blob correctly
 			// Problem: decoded_arraybuffer is an AudioBuffer object, not raw data - only the player can understand the AudioBuffer object
 			// Way 2
-			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
-			const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
+			// const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
+			// const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
 			// { "error": { "message": "The audio file could not be decoded or its format is not supported.", "type": "invalid_request_error", "param": null, "code": null } }
+			// let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
+
+			// Way 3
+			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
+			let blob_object = new Blob([channelData], { type: "audio/mp3" });
 			
-			let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
 			return blob_object;
 		})
 		.then(async function(decoded_arraybuffer_blob) { 
