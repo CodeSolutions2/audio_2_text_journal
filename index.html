@@ -218,7 +218,10 @@ async function previewInput(event) {
 
 				source.connect(audioContext.destination);  // it adds a field in the object source, but did nothing
 
-				source.noteOn(0);
+				// source.noteOn(0); 
+				// TypeError: source.noteOn is not a function
+					
+				() => { source.noteOn(0); }
 				
 				console.log("source:", source);
 
