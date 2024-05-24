@@ -100,7 +100,12 @@ async function processEvent_stop_audio(event) {
 
 	console.log('event audioElement: ', event);
 	
-	if (this.getAttribute("pause") == true) {
+	if (this.getAttribute("pause") == false) {
+		// document.getElementById('audio_input_display_js').play();
+		
+	//} else if (this.getAttribute("play") == true) {
+		
+	} else {
 		document.getElementById('audio_input_display_js').pause();
 	}
 }
@@ -221,7 +226,6 @@ async function previewInput(event) {
 				
 				// Fill the buffer with audio data
 				const channelData_test = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
-				console.log('channelData_test: ', channelData_test);
 				
 				// One knows the length of channelData_test because of the designated sample_length and sample_rate
 				for (let i = 0; i < channelData_test.length; i++) {
@@ -231,7 +235,7 @@ async function previewInput(event) {
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				source.buffer = myArrayBuffer;
 				source.id = "audio_source_input_display_js";
-				source.src = decoded_arraybuffer_blob_url;
+				// source.src = decoded_arraybuffer_blob_url; // Media resource blob:https://codesolutions2.github.io/5e542844-fc98-4647-a703-24cf2c770806 could not be decoded.
 				source.type = file_extention_type;
 				source.connect(audioContext.destination);
 
