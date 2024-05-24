@@ -7,3 +7,5 @@ Upload your audio file and view the transcription to the right! Keep your transc
 Ask yourself questions about the things you talked about in your journal to obtain more clarity and insight in your life! 
 
 [**Upload your data to the FrontEnd App Here**] https://codesolutions2.github.io/audio_2_text_journal/index.html
+
+![alt_text](audio_2_text.png)
