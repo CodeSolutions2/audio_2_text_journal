@@ -155,30 +155,30 @@ async function previewInput(event) {
 				    // Decode the arraybuffer - *** this should be the audio data to play ***
 				    return audioContext.decodeAudioData(arraybuffer);
 			    })
-			.then(async function(decoded_arraybuffer) {
+			.then(async function(decoded_audiobuffer) {
 
-				console.log("decoded_arraybuffer:", decoded_arraybuffer);
+				console.log("decoded_audiobuffer:", decoded_audiobuffer);
 				
 				// ----------------------------
 				
 				// Set the file_download_url
 				// Put the text data in a temporary blob file, and create a url to the data
-				let decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });  // make a global variable
+				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  // make a global variable
 				
 				// Create a url for the data object
-				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob);
+				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob);
 
 				// Attached the decoded_arraybuffer_blob_url to the audioElement
-				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+				// document.getElementById("audio_input_display_js").src = decoded_audiobuffer_blob_url;
 				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded. index.html
 				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded, error: Error Code: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
 				// Problem: making the blobURL re-encodes the decoded_arraybuffer so the media player can not read the data from the src blob link 
 
 				// ----------------------------
 
-				// Set path to fetch mp3 file from PC using decoded_arraybuffer_blob_url
-				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
-				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
+				// Set path to fetch mp3 file from PC using decoded_audiobuffer_blob_url
+				document.getElementById("file_download_url").value = decoded_audiobuffer_blob_url;
+				document.getElementById('file_download_url').placeholder = decoded_audiobuffer_blob_url;
 
 				// Try 1: use defined path from button click event (C:\fakepath\2024_01_31_09_25_51.mp3)
 				// document.getElementById("file_download_url").value = document.getElementById("file_path").innerHTML;
@@ -198,17 +198,17 @@ async function previewInput(event) {
 				// source.src = e.target.result;
 				    
 				// Way 1: decoded_arraybuffer_blob_url
-				// decoded_arraybuffer_blob_url = "blob:https://codesolutions2.github.io/1d0872b3-73c9-4941-9cf5-a95b71f57bd9"
-				// source.src = decoded_arraybuffer_blob_url;  // no audio file could be played
+				// decoded_audiobuffer_blob_url = "blob:https://codesolutions2.github.io/1d0872b3-73c9-4941-9cf5-a95b71f57bd9"
+				// source.src = decoded_audiobuffer_blob_url;  // no audio file could be played
 				    
 				// Way 2: try decoded_arraybuffer directly
-				// source.src = decoded_arraybuffer;	// no audio file could be played
+				// source.src = decoded_audiobuffer;	// no audio file could be played
 
 				// Way 3: audio file name
 				// source.src = document.getElementById("file_name").value;  // it will think the file is in the GitHub repository
 
 				// [1] 
-				source.buffer = decoded_arraybuffer;
+				source.buffer = decoded_audiobuffer;
 
 				// [2]
 				source.id = "audio_source_input_display_js";
@@ -217,11 +217,10 @@ async function previewInput(event) {
 				source.type = file.type;
 
 				source.connect(audioContext.destination);  // it adds a field in the object source, but did nothing
-
-				// source.noteOn(0); 
-				// TypeError: source.noteOn is not a function
 					
-				() => { source.noteOn(0); }
+				// () => { source.noteOn(0); }  // no audio file loaded
+
+				() => { source.start(); }
 				
 				console.log("source:", source);
 
@@ -438,17 +437,25 @@ async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
 			audioContext = new AudioContext(); 
 			return audioContext.decodeAudioData(arraybuffer); 
 		})
-		.then(async function(decoded_arraybuffer) { 
-			// console.log('decoded_arraybuffer in transcription: ', decoded_arraybuffer); // OK
+		.then(async function(decoded_audiobuffer) { 
+			// console.log('decoded_audiobuffer in transcription: ', decoded_audiobuffer); // OK
 			// AudioBuffer { sampleRate: 48000, length: 5226162, duration: 108.878375, numberOfChannels: 1 }
 
 			// Create a blob with the decoded_arraybuffer
 			// Way 0
-			// let blob_object = new Blob(decoded_arraybuffer, {type: "audio/mp3"});
+			// let blob_object = new Blob(decoded_audiobuffer, {type: "audio/mp3"});
 			// This error message will be blank when privacy.resistFingerprinting = true.  If it is really necessary, please add it to the whitelist in MediaError::GetMessage: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
 			// TypeError: Blob constructor: Argument 1 can't be converted to a sequence.
 
 			// Way 1
+			// let blob_object = new Blob([decoded_audiobuffer], { type: "audio/mp3" });
+			// decoded_arraybuffer_blob in transcription:  Blob { size: 20, type: "audio/mp3" }
+			// { "error": { "message": "Invalid file format. Supported formats: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']", "type": "invalid_request_error", "param": null, "code": null } }
+			// It does not create the blob correctly
+			// Problem: decoded_arraybuffer is an AudioBuffer object, not raw data - only the player can understand the AudioBuffer object
+			// Way 2
+			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
+			const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
 			let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
 			return blob_object;
 		})
