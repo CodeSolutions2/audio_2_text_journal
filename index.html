@@ -243,11 +243,13 @@ async function previewInput(event) {
 				// Transform audiodata into correct format for source.buffer
 				// https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createBufferSource
 				let channels = decoded_audiobuffer.numberOfChannels; 
-				let frameCount = decoded_audiobuffer.sampleRate * channels; // sample_length
+				let frameCount = decoded_audiobuffer.length; // sample_length
 				let sampleRate = decoded_audiobuffer.sampleRate; // sample_rate
 				const myArrayBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
 				// Fill the buffer with audio data
 				const channelData_test = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
+				console.log('channelData_test: ', channelData_test);
+				
 				// One knows the length of channelData_test because of the designated sample_length and sample_rate
 				for (let i = 0; i < channelData_test.length; i++) {
 					// channelData_test[i] = Math.random() * 2 - 1; // Assign random values between -1 and 1
@@ -257,6 +259,8 @@ async function previewInput(event) {
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				source.buffer = myArrayBuffer;
 				source.connect(audioContext.destination);
+
+				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
 				source.start(0);
 			})
     
