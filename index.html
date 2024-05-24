@@ -249,6 +249,8 @@ async function previewInput(event) {
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
 				// source.start(0); // WORKS!!
 
+				// The audioContext via the audioElement can play Float32Array data.
+
 				// ----------------------------
 
 				// Try to set the path for the audioElement
@@ -351,7 +353,7 @@ async function transcribe_audio() {
 				
 			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
 				if (dict_out['model_name'] == 'openai') {
-					await call_openai_model_try0(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+					await call_openai_model_try2(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
 						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
 				} else {
 					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
@@ -404,6 +406,31 @@ async function call_openai_model_try0(file_object, OPENAI_API_KEY) {
 		.catch(error => { document.getElementById('error').innerHTML = error; });
 }
 	
+// ----------------------------------------------------
+
+// Try 2: base64_string -> blob -> decoded_arraybuffer
+async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
+	
+	await start_processing_notification()
+		.then(async function() { 
+			// console.log('base64_string in transcription: ', file_object.base64_string); // OK
+			return await fetch(file_object.base64_string); 
+		})
+		.then(response => response.blob())
+		.then(async function(blob_object) { 
+			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
+		})
+		.then(async function(file_blob_object) { 
+		 	if (Math.floor(Math.random()*2) == 1) {
+		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	} else {
+		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	}
+		})
+		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+}
+
 // ----------------------------------------------------
 
 // Try 3: base64_string -> arraybuffer -> decoded_arraybuffer
