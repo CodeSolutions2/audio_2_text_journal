@@ -247,10 +247,10 @@ async function previewInput(event) {
 				let sampleRate = decoded_audiobuffer.sampleRate; // sample_rate
 				const myArrayBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
 				// Fill the buffer with audio data
-				const channelData = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
-				// One knows the length of channelData because of the designated sample_length and sample_rate
-				for (let i = 0; i < channelData.length; i++) {
-					channelData[i] = Math.random() * 2 - 1; // Assign random values between -1 and 1
+				const channelData_test = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
+				// One knows the length of channelData_test because of the designated sample_length and sample_rate
+				for (let i = 0; i < channelData_test.length; i++) {
+					channelData_test[i] = Math.random() * 2 - 1; // Assign random values between -1 and 1
 				}
 				
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
