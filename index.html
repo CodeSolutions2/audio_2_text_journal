@@ -154,51 +154,50 @@ async function previewInput(event) {
 		// ---------------------
 		
 		await fetch(e.target.result)
+			.then(response => response.blob())
+			.then(async function(blob_object) {
+				document.getElementById("audio_input_display_js").src = URL.createObjectURL(blob_object);
+			})
+
+		// ---------------------
+		
+		await fetch(e.target.result)
 			.then(response => response.arrayBuffer())
 			.then(async function(arraybuffer) {
-				    
-				    // ----------------------------
-				    
 				    // Print arraybuffer
 				    console.log("arraybuffer:", arraybuffer);
+				    // arraybuffer: ArrayBuffer { byteLength: 314308 }
 
 				    // ----------------------------
 
 				    // Create the audio context
 				    audioContext = new AudioContext();
 
-				    // ----------------------------
-
-				    // Decode the arraybuffer - *** this should be the audio data to play ***
+				    // Decode the arraybuffer
 				    return audioContext.decodeAudioData(arraybuffer);
 			    })
 			.then(async function(decoded_audiobuffer) {
 
-				console.log("decoded_audiobuffer:", decoded_audiobuffer);
+				// console.log("decoded_audiobuffer:", decoded_audiobuffer);
 				// AudioBuffer { sampleRate: 48000, length: 7508992, duration: 156.43733333333333, numberOfChannels: 2 }
 
 				// ----------------------------
 				
 				// Set the file_download_url
 
-				console.log('file type: ', file.type);
-
-				// Try 0
+				// console.log('file type: ', file.type);
+				
 				// Put the text data in a temporary blob file, and create a url to the data
 				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  
 				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob); // Create a url for the data object
 
 				// Try 2
 				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
-				console.log('channelData: ', channelData);
+				// console.log('channelData: ', channelData);
 				// channelData:  Float32Array(7508992) [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, … ]
-				
-				// const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
-				// console.log('decoded_arraybuffer: ', decoded_arraybuffer);
-				// decoded_arraybuffer:  ArrayBuffer { byteLength: 30035968 }
 
 				let file_extention_type = "audio/"+document.getElementById("file_name").value.split('.').pop();
-				console.log('file_extention_type: ', file_extention_type);
+				// console.log('file_extention_type: ', file_extention_type);
 				
 				let decoded_arraybuffer_blob = new Blob([channelData], { type: file_extention_type });
 				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob); // Create a url for the data object
@@ -209,14 +208,6 @@ async function previewInput(event) {
 				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
 				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
 				
-				// ----------------------------
-
-				// Assign source variables
-
-				// Create the audio source
-				// var source = audioContext.createMediaElementSource(document.getElementById("audio_input_display_js"));
-				// var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
-
 				// ----------------------------
 
 				// Play the music/audio file
@@ -313,7 +304,7 @@ async function transcribe_audio() {
 				document.getElementById('error').innerHTML += "Select a model.";
 			}
 			
-			console.log("model_name: ", model_name);
+			// console.log("model_name: ", model_name);
 			// console.log("API_KEY: ", API_KEY);
 			return [model_name, API_KEY];
 		})
@@ -326,7 +317,7 @@ async function transcribe_audio() {
 						base64_string: document.getElementById("base64_string").innerHTML
                              }]];			
 
-			console.log("total_file_objects: ", total_file_objects);
+			// console.log("total_file_objects: ", total_file_objects);
 			
 			return {total_file_objects: total_file_objects, model_name: array[0], API_KEY: array[1], index: 0};
 		})
@@ -337,7 +328,7 @@ async function transcribe_audio() {
 			document.getElementById("audio_input_display_js").style.display = "block"; 
 
 			// Try to get the audio file from the DOM
-			console.log("audio: ", document.getElementById("audio_input_display_js"))
+			// console.log("audio: ", document.getElementById("audio_input_display_js"))
 
 			return dict_out;
 		})
@@ -386,29 +377,7 @@ async function start_processing_notification() {
 
 // ----------------------------------------------------
 
-// Try 0: path to blob (decoded_arraybuffer_blob_url) -> use fetch to get the actual blob object -> blob_object -> file_blob_object
-async function call_openai_model_try0(file_object, OPENAI_API_KEY) {
-	
-	await start_processing_notification()
-		.then(async function() { return await fetch(document.getElementById("file_download_url").value); })
-		.then(response => response.blob())
-		.then(async function(blob_object) { 
-			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
-		})
-		.then(async function(file_blob_object) { 
-		 	if (Math.floor(Math.random()*2) == 1) {
-		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
-		 	} else {
-		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
-		 	}
-		})
-		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
-		.catch(error => { document.getElementById('error').innerHTML = error; });
-}
-	
-// ----------------------------------------------------
-
-// Try 2: base64_string -> blob -> decoded_arraybuffer
+// Try 2: base64_string -> blob -> file_blob_object
 async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
 	
 	await start_processing_notification()
@@ -432,68 +401,6 @@ async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
 }
 
 // ----------------------------------------------------
-
-// Try 3: base64_string -> arraybuffer -> decoded_arraybuffer
-async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
-	
-	await start_processing_notification()
-		.then(async function() { 
-			// console.log('base64_string in transcription: ', file_object.base64_string); // OK
-			return await fetch(file_object.base64_string); 
-		})
-		.then(response => response.arrayBuffer())
-		.then(async function(arraybuffer) { 
-			// console.log('arraybuffer in transcription: ', arraybuffer); // OK
-			audioContext = new AudioContext(); 
-			return audioContext.decodeAudioData(arraybuffer); 
-		})
-		.then(async function(decoded_audiobuffer) { 
-			// console.log('decoded_audiobuffer in transcription: ', decoded_audiobuffer); // OK
-			// AudioBuffer { sampleRate: 48000, length: 5226162, duration: 108.878375, numberOfChannels: 1 }
-
-			// Create a blob with the decoded_arraybuffer
-			// Way 0
-			// let blob_object = new Blob(decoded_audiobuffer, {type: "audio/mp3"});
-			// This error message will be blank when privacy.resistFingerprinting = true.  If it is really necessary, please add it to the whitelist in MediaError::GetMessage: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
-			// TypeError: Blob constructor: Argument 1 can't be converted to a sequence.
-
-			// Way 1
-			// let blob_object = new Blob([decoded_audiobuffer], { type: "audio/mp3" });
-			// decoded_arraybuffer_blob in transcription:  Blob { size: 20, type: "audio/mp3" }
-			// { "error": { "message": "Invalid file format. Supported formats: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']", "type": "invalid_request_error", "param": null, "code": null } }
-			// It does not create the blob correctly
-			// Problem: decoded_arraybuffer is an AudioBuffer object, not raw data - only the player can understand the AudioBuffer object
-			// Way 2
-			// const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
-			// const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
-			// { "error": { "message": "The audio file could not be decoded or its format is not supported.", "type": "invalid_request_error", "param": null, "code": null } }
-			// let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
-
-			// Way 3
-			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
-			let blob_object = new Blob([channelData], { type: "audio/mp3" });
-			// channelData:  Float32Array(942916) [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, … ]
-			// { "error": { "message": "The audio file could not be decoded or its format is not supported.", "type": "invalid_request_error", "param": null, "code": null } }
-			
-			return blob_object;
-		})
-		.then(async function(decoded_arraybuffer_blob) { 
-			console.log('decoded_arraybuffer_blob in transcription: ', decoded_arraybuffer_blob);
-			return new File ([decoded_arraybuffer_blob], file_object.name, {type: "audio/mp3"});
-		})
-		.then(async function(file_blob_object) { 
-		 	if (Math.floor(Math.random()*2) == 1) {
-		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
-		 	} else {
-		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
-		 	}
-		})
-		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
-		.catch(error => { document.getElementById('error').innerHTML = error; });
-}
-
-// ----------------------------------------------------
-
 
 async function openai_transcription(file_input, which_input, header_string, OPENAI_API_KEY) {
 	
