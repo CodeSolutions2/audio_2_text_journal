@@ -257,7 +257,7 @@ async function previewInput(event) {
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				source.buffer = myArrayBuffer;
 				source.connect(audioContext.destination);
-				source.start();
+				source.start(0);
 			})
     
 	}
