@@ -155,7 +155,7 @@ async function previewInput(event) {
 			    })
 			.then(async function(decoded_arraybuffer) {
 
-        decoded_arraybuffer = decoded_arraybuffer; // make a global variable
+				decoded_arraybuffer = decoded_arraybuffer; // make a global variable
 				console.log("decoded_arraybuffer:", decoded_arraybuffer);
 				
 				// ----------------------------
@@ -172,15 +172,14 @@ async function previewInput(event) {
 				decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });  // make a global variable
 				
 				// Create a url for the data object
-				const url = URL.createObjectURL(decoded_arraybuffer_blob);
+				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob);
 
 				// ----------------------------
 
 				// Set path to fetch mp3 file from PC
 				
-				// Try 0: use the blob url of the decoded_arraybuffer 
-				document.getElementById("file_download_url").value = url;
-				document.getElementById('file_download_url').placeholder = url;
+				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
+				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
 
 				// Try 1: use defined path from button click event (C:\fakepath\2024_01_31_09_25_51.mp3)
 				// document.getElementById("file_download_url").value = document.getElementById("file_path").innerHTML;
@@ -195,9 +194,9 @@ async function previewInput(event) {
 				// Way 0: base64 string encoded - does not make sense because is base64 encrypted, it is not an mp3
 				// source.src = e.target.result;
 				    
-				// Way 1: blob url of decoded_arraybuffer
-				// url = "blob:https://codesolutions2.github.io/1d0872b3-73c9-4941-9cf5-a95b71f57bd9"
-				// source.src = url;  // no audio file could be played
+				// Way 1: decoded_arraybuffer_blob_url
+				// decoded_arraybuffer_blob_url = "blob:https://codesolutions2.github.io/1d0872b3-73c9-4941-9cf5-a95b71f57bd9"
+				// source.src = decoded_arraybuffer_blob_url;  // no audio file could be played
 				    
 				// Way 2: try decoded_arraybuffer directly
 				// source.src = decoded_arraybuffer;	// no audio file could be played
@@ -223,7 +222,7 @@ async function previewInput(event) {
 				// ----------------------------
 				
 				// Way 4: use the source in the HTML
-				// document.getElementById("audio_source_input_display").src = url;  // no audio file could be played
+				// document.getElementById("audio_source_input_display").src = decoded_arraybuffer_blob_url;  // no audio file could be played
 				// document.getElementById("audio_source_input_display").src = document.getElementById("file_path").innerHTML;
 				// document.getElementById("audio_source_input_display").buffer = decoded_arraybuffer;
 
@@ -318,26 +317,27 @@ async function transcribe_audio() {
 			return dict_out;
 		})
 		// D. Transcribe audio files
-    .then(async function(dict_out) {
-      console.log("dict_out['total_file_objects']:", dict_out['total_file_objects']);
-			
-		//   	const total_files = dict_out['total_file_objects'][0].length;
-		//   	console.log("total_files :", total_files);
-		//   	console.log("dict_out['index'] :", dict_out['index']);
-		//   	console.log("total_files-1 :", total_files-1);
-		//   	console.log("max_loops :", max_loops);
-			
-		//   	while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
-		// 		if (dict_out['model_name'] == 'openai') {
-		//   			await call_openai_model(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
-		 //  				.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
-		 //  		} else {
-		  // 			await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
-		 //  				.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
-		  // 		}
-		  	// 	dict_out['index'] = dict_out['index'] + 1;
-		 //  	}
-		// })
+		.then(async function(dict_out) {
+			console.log("dict_out['total_file_objects']:", dict_out['total_file_objects']);
+				
+			//   	const total_files = dict_out['total_file_objects'][0].length;
+			//   	console.log("total_files :", total_files);
+			//   	console.log("dict_out['index'] :", dict_out['index']);
+			//   	console.log("total_files-1 :", total_files-1);
+			//   	console.log("max_loops :", max_loops);
+				
+			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
+				if (dict_out['model_name'] == 'openai') {
+					await call_openai_model_try0(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
+				} else {
+					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
+						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
+				}
+			    
+				dict_out['index'] = dict_out['index'] + 1;
+			}
+		})
 		.catch(error => { document.getElementById('error').innerHTML += error; });
 		
 }
@@ -361,28 +361,60 @@ async function start_processing_notification() {
 
 // ----------------------------------------------------
 
-await fetch(document.getElementById("file_download_url").value)
+// Try 0: decoded_arraybuffer_blob_url -> arraybuffer -> blob_object -> file_blob_object
+// Does not work but need to understand why
+async function call_openai_model_try0(file_object, OPENAI_API_KEY) {
 
-
-async function call_openai_model(file_object, OPENAI_API_KEY) {
-
-	console.log("blob file to fetch: ", document.getElementById("file_download_url").value);
+	console.log("decoded_arraybuffer_blob_url: ", document.getElementById("file_download_url").value);
 	
 	await start_processing_notification()
 		// Way 0: fetch data from pc (base64 string encoded) - arraybuffer - decode arraybuffer - create blob of decode arraybuffer - obtain url of blob (file_download_url)
 		.then(async function() { return await fetch(document.getElementById("file_download_url").value); })
 		.then(response => response.arrayBuffer())
 		.then(arrayBuffer => { return new Blob(arrayBuffer, {type: "audio/mp3"}); })
-		// OR
-		// Way 1: Create a blob from the arrayBuffer
-		// .then(() => { return new Blob(file_object.audio_data, {type: "audio/mp3"}); })
-		// -------------------------------------
-		// Transform blob into a file
 		.then(async function(blob_object) { 
 			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
 		})
 		.then(async function(file_blob_object) { 
-			// Use transcription or translation model randomly
+		 	if (Math.floor(Math.random()*2) == 1) {
+		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	} else {
+		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	}
+		})
+		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+}
+	
+// ----------------------------------------------------
+	
+// Try 1: Use decoded_arraybuffer -> blob_object -> file_blob_object
+async function call_openai_model_try1(file_object, OPENAI_API_KEY) {
+	
+	await start_processing_notification()
+		.then(() => { return new Blob(arrayBuffer, {type: "audio/mp3"}); })
+		.then(async function(blob_object) { return new File ([blob_object], file_object.name, {type: "audio/mp3"}); })
+		.then(async function(file_blob_object) { 
+		 	if (Math.floor(Math.random()*2) == 1) {
+		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	} else {
+		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	}
+		})
+		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+}
+
+// ----------------------------------------------------
+
+// Try 2: Use decoded_arraybuffer_blob -> file_blob_object
+async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
+	
+	await start_processing_notification()
+		.then(async function() { 
+			return new File ([decoded_arraybuffer_blob], file_object.name, {type: "audio/mp3"});
+		})
+		.then(async function(file_blob_object) { 
 		 	if (Math.floor(Math.random()*2) == 1) {
 		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
 		 	} else {
