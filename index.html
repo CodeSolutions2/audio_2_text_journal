@@ -156,7 +156,8 @@ async function previewInput(event) {
 			.then(async function(decoded_audiobuffer) {
 
 				console.log("decoded_audiobuffer:", decoded_audiobuffer);
-				
+				// AudioBuffer { sampleRate: 48000, length: 7508992, duration: 156.43733333333333, numberOfChannels: 2 }
+
 				// ----------------------------
 				
 				// Set the file_download_url
@@ -177,11 +178,16 @@ async function previewInput(event) {
 				// Try 2
 				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
 				console.log('channelData: ', channelData);
+				// channelData:  Float32Array(7508992) [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, … ]
 				
-				const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
-				console.log('decoded_arraybuffer: ', decoded_arraybuffer);
+				// const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
+				// console.log('decoded_arraybuffer: ', decoded_arraybuffer);
+				// decoded_arraybuffer:  ArrayBuffer { byteLength: 30035968 }
+
+				let file_extention_type = "audio/"+document.getElementById("file_name").value.split('.').pop();
+				console.log('file_extention_type: ', file_extention_type);
 				
-				let decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });
+				let decoded_arraybuffer_blob = new Blob([channelData], { type: file_extention_type });
 				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob); // Create a url for the data object
 
 				// ----------------------------
@@ -189,11 +195,6 @@ async function previewInput(event) {
 				// Set path to fetch mp3 file from PC
 				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
 				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
-
-				// Try 1: use defined path from button click event (C:\fakepath\2024_01_31_09_25_51.mp3)
-				// document.getElementById("file_download_url").value = document.getElementById("file_path").innerHTML;
-				// document.getElementById('file_download_url').placeholder = document.getElementById("file_path").innerHTML;
-				// TypeError: NetworkError when attempting to fetch resource.
 				
 				// ----------------------------
 
@@ -202,50 +203,14 @@ async function previewInput(event) {
 				// Create the audio source
 				// var source = audioContext.createMediaElementSource(document.getElementById("audio_input_display_js"));
 				// var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
-				    
-				// [0] Set the audio source to play the audio file
-				// Way 0: base64 string encoded - does not make sense because is base64 encrypted, it is not an mp3
-				// source.src = e.target.result;
-				    
-				// Way 1: decoded_arraybuffer_blob_url
-				// decoded_audiobuffer_blob_url = "blob:https://codesolutions2.github.io/1d0872b3-73c9-4941-9cf5-a95b71f57bd9"
-				// source.src = decoded_audiobuffer_blob_url;  // no audio file could be played
-				    
-				// Way 2: try decoded_arraybuffer directly
-				// source.src = decoded_audiobuffer;	// no audio file could be played
-
-				// Way 3: audio file name
-				// source.src = document.getElementById("file_name").value;  // it will think the file is in the GitHub repository
-
-				// [1] 
-				// source.buffer = decoded_audiobuffer; 
-				// AudioBuffer { sampleRate: 48000, length: 5226162, duration: 108.878375, numberOfChannels: 1 }
-
-				// [2]
-				// source.id = "audio_source_input_display_js";
-
-				// [3]
-				// source.type = file.type;
-
-				// Connect the source directly
-				// source.connect(audioContext.destination);  // it adds a field in the object source, but did nothing
-					
-				// () => { source.noteOn(0); }  // no audio file loaded
-				// () => { source.start(); }  // no audio file loaded
-				
-				// console.log("source:", source);
 
 				// ----------------------------
 
-				// Check to see if data is indexed correctly: so create some fake noise data and put it in the correct format
-				// The transcription model says the data is not correct, so need to try to figure out how to get the correct data
-
-				// Create some noise audio data the same length and sampling frequency as a selected .mp3 file
+				// Play the music/audio file
 				// Transform audiodata into correct format for source.buffer
 				// https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createBufferSource
 				let channels = decoded_audiobuffer.numberOfChannels; 
-				let frameCount = decoded_audiobuffer.length; // sample_length // Correct
-				frameCount = Number(frameCount*0.02); // to make it stop quickly - play 2 percent of the audio
+				let frameCount = decoded_audiobuffer.length; // sample_length
 				let sampleRate = decoded_audiobuffer.sampleRate; // sample_rate
 				const myArrayBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
 				
@@ -255,12 +220,14 @@ async function previewInput(event) {
 				
 				// One knows the length of channelData_test because of the designated sample_length and sample_rate
 				for (let i = 0; i < channelData_test.length; i++) {
-					// channelData_test[i] = Math.random() * 2 - 1; // Assign random values between -1 and 1
-					// channelData_test[i] = channelData[i];
+					channelData_test[i] = channelData[i];
 				}
 				
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				source.buffer = myArrayBuffer;
+				source.id = "audio_source_input_display_js";
+				source.src = decoded_arraybuffer_blob_url;
+				source.type = file_extention_type;
 				source.connect(audioContext.destination);
 
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
