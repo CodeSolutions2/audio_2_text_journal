@@ -177,6 +177,7 @@ async function previewInput(event) {
 				// Try 2
 				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
 				console.log('channelData: ', channelData);
+				
 				const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
 				console.log('decoded_arraybuffer: ', decoded_arraybuffer);
 				
@@ -243,9 +244,11 @@ async function previewInput(event) {
 				// Transform audiodata into correct format for source.buffer
 				// https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createBufferSource
 				let channels = decoded_audiobuffer.numberOfChannels; 
-				let frameCount = decoded_audiobuffer.length; // sample_length
+				let frameCount = decoded_audiobuffer.length; // sample_length // Correct
+				frameCount = Number(frameCount*0.02); // to make it stop quickly - play 2 percent of the audio
 				let sampleRate = decoded_audiobuffer.sampleRate; // sample_rate
 				const myArrayBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
+				
 				// Fill the buffer with audio data
 				const channelData_test = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
 				console.log('channelData_test: ', channelData_test);
@@ -253,7 +256,7 @@ async function previewInput(event) {
 				// One knows the length of channelData_test because of the designated sample_length and sample_rate
 				for (let i = 0; i < channelData_test.length; i++) {
 					// channelData_test[i] = Math.random() * 2 - 1; // Assign random values between -1 and 1
-					channelData_test[i] = channelData[i];
+					// channelData_test[i] = channelData[i];
 				}
 				
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
