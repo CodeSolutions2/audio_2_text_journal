@@ -92,28 +92,10 @@ var model_name = "";
 var API_KEY = "";
 var max_loops = 10;
 
-var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
 // ----------------------------------------------------
 	
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume
 document.getElementById("audio_input_display_js").volume = 0.25; 
-	
-// ----------------------------------------------------
-
-async function processEvent_stop_audio(event) {
-	console.log('event audioElement: ', event);
-	() => { 
-		audioContext.createBufferSource(document.getElementById("audio_input_display_js")).pause(); 
-	}
-}
-// document.getElementById('audio_input_display_js').addEventListener("pause", processEvent_stop_audio, false);
-
-async function processEvent_play_audio(event) {
-	console.log('event audioElement: ', event);
-	audioContext.createBufferSource(document.getElementById("audio_input_display_js")).play();
-}
-// document.getElementById('audio_input_display_js').addEventListener("play", processEvent_play_audio, false);
 	
 // ----------------------------------------------------
 	
@@ -124,7 +106,7 @@ async function previewInput(event) {
 	
 	// ---------------------
 	
-	console.log("event :", event);
+	// console.log("event :", event);
 
 	// Automatic path to the audio on the PC
 	document.getElementById("file_path").innerHTML = event.srcElement.value;
@@ -147,12 +129,13 @@ async function previewInput(event) {
 	
 	reader.onload = async function(e){
 
-		// Save base64_string to DOM to redo decoding for transcription
+		// Save base64_string to DOM 
 		// console.log("e.target.result :", e.target.result);
 		document.getElementById("base64_string").innerHTML = e.target.result;
 
 		// ---------------------
-		
+
+		// Send the audio to the audioElement
 		await fetch(e.target.result)
 			.then(response => response.blob())
 			.then(async function(blob_object) {
@@ -160,99 +143,8 @@ async function previewInput(event) {
 			})
 
 		// ---------------------
-		
-		await fetch(e.target.result)
-			.then(response => response.arrayBuffer())
-			.then(async function(arraybuffer) {
-				    // Print arraybuffer
-				    console.log("arraybuffer:", arraybuffer);
-				    // arraybuffer: ArrayBuffer { byteLength: 314308 }
-
-				    // ----------------------------
-
-				    // Create the audio context
-				    audioContext = new AudioContext();
-
-				    // Decode the arraybuffer
-				    return audioContext.decodeAudioData(arraybuffer);
-			    })
-			.then(async function(decoded_audiobuffer) {
-
-				// console.log("decoded_audiobuffer:", decoded_audiobuffer);
-				// AudioBuffer { sampleRate: 48000, length: 7508992, duration: 156.43733333333333, numberOfChannels: 2 }
-
-				// ----------------------------
-				
-				// Set the file_download_url
-
-				// console.log('file type: ', file.type);
-				
-				// Put the text data in a temporary blob file, and create a url to the data
-				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  
-				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob); // Create a url for the data object
-
-				// Try 2
-				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
-				// console.log('channelData: ', channelData);
-				// channelData:  Float32Array(7508992) [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, … ]
-
-				let file_extention_type = "audio/"+document.getElementById("file_name").value.split('.').pop();
-				// console.log('file_extention_type: ', file_extention_type);
-				
-				let decoded_arraybuffer_blob = new Blob([channelData], { type: file_extention_type });
-				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob); // Create a url for the data object
-
-				// ----------------------------
-
-				// Set path to fetch mp3 file from PC
-				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
-				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
-				
-				// ----------------------------
-
-				// Play the music/audio file
-				// Transform audiodata into correct format for source.buffer
-				// https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createBufferSource
-				let channels = decoded_audiobuffer.numberOfChannels; 
-				let frameCount = decoded_audiobuffer.length; // sample_length
-				let sampleRate = decoded_audiobuffer.sampleRate; // sample_rate
-				const myArrayBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
-				
-				// Fill the buffer with audio data
-				const channelData_test = myArrayBuffer.getChannelData(0); // Access the channel data for the first channel
-				
-				// One knows the length of channelData_test because of the designated sample_length and sample_rate
-				for (let i = 0; i < channelData_test.length; i++) {
-					channelData_test[i] = channelData[i];
-				}
-				
-				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
-				source.buffer = myArrayBuffer;
-				source.id = "audio_source_input_display_js";
-				
-				// source.src = decoded_arraybuffer_blob_url; // Media resource blob:https://codesolutions2.github.io/5e542844-fc98-4647-a703-24cf2c770806 could not be decoded.
-				// source.srcObject = decoded_arraybuffer_blob_url; // the blob is not an object
-				source.srcElement = decoded_arraybuffer_blob_url; // does nothing
-				
-				source.type = file_extention_type;
-				source.connect(audioContext.destination);
-
-				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
-				// source.start(0); // WORKS!!
-
-				// The audioContext via the audioElement can play Float32Array data.
-
-				// ----------------------------
-
-				// Try to set the path for the audioElement
-				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;  // Media resource blob:https://codesolutions2.github.io/5e542844-fc98-4647-a703-24cf2c770806 could not be decoded.
-				// document.getElementById("audio_input_display_js").srcObject = decoded_arraybuffer_blob_url;
-				document.getElementById("audio_input_display_js").srcElement = decoded_arraybuffer_blob_url;
-				
-			})
-    
 	}
-	reader.readAsDataURL(file);  // for Try 0, 1, 2
+	reader.readAsDataURL(file);
 }
 
 // ----------------------------------------------------
@@ -377,7 +269,7 @@ async function start_processing_notification() {
 
 // ----------------------------------------------------
 
-// Try 2: base64_string -> blob -> file_blob_object
+// base64_string -> blob -> file_blob_object
 async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
 	
 	await start_processing_notification()
@@ -484,55 +376,7 @@ async function openai_translation(file_input, which_input, header_string, OPENAI
 
 	
 // ----------------------------------------------------
-	
 
-async function get_one_audio_file_object_from_repo(repoOwner, repoName, file_name) {
-
-	var url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents`;
-
-	let file_objects = [];
-	
-	return await fetch(url)
-		.then(res => res.json())
-		.then(data => {
-			data.forEach(async function(file) {
-				var regexp = new RegExp(`${file_name}`, 'g');
-				if (file.type === 'file' && file.name.match(regexp)) {
-					file_objects.push(file);
-				}
-			});
-			return file_objects;
-		})
-		.catch(error => { document.getElementById('error').innerHTML = error; });
-	
-}
-
-
-// ----------------------------------------------------
-
-
-async function get_audio_file_objects_from_repo(repoOwner, repoName) {
-
-	var url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents`;
-	
-	var file_objects = [];
-	
-	return await fetch(url)
-		.then(res => res.json())
-		.then(data => {
-			data.forEach(async function(file) {
-				if (file.type === 'file' && file.name.match(/.(mp3)$/i)) {
-					file_objects.push(file);
-				}
-			});
-			return file_objects;
-		})
-		.catch(error => { document.getElementById('error').innerHTML = error; });
-	
-}
-
-
-// ----------------------------------------------------
 	
 </script>
 
