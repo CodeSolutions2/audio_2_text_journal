@@ -105,13 +105,13 @@ async function processEvent_stop_audio(event) {
 		audioContext.createBufferSource(document.getElementById("audio_input_display_js")).pause(); 
 	}
 }
-document.getElementById('audio_input_display_js').addEventListener("pause", processEvent_stop_audio, false);
+// document.getElementById('audio_input_display_js').addEventListener("pause", processEvent_stop_audio, false);
 
 async function processEvent_play_audio(event) {
 	console.log('event audioElement: ', event);
 	audioContext.createBufferSource(document.getElementById("audio_input_display_js")).play();
 }
-document.getElementById('audio_input_display_js').addEventListener("play", processEvent_play_audio, false);
+// document.getElementById('audio_input_display_js').addEventListener("play", processEvent_play_audio, false);
 	
 // ----------------------------------------------------
 	
@@ -236,13 +236,22 @@ async function previewInput(event) {
 				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				source.buffer = myArrayBuffer;
 				source.id = "audio_source_input_display_js";
+				
 				// source.src = decoded_arraybuffer_blob_url; // Media resource blob:https://codesolutions2.github.io/5e542844-fc98-4647-a703-24cf2c770806 could not be decoded.
+				// source.srcObject = decoded_arraybuffer_blob_url; // the blob is not an object
+				source.srcElement = decoded_arraybuffer_blob_url; // does nothing
+				
 				source.type = file_extention_type;
 				source.connect(audioContext.destination);
 
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
 				// source.start(0); // WORKS!!
 
+				// ----------------------------
+
+				// Try to set the path for the audioElement
+				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;  // Media resource blob:https://codesolutions2.github.io/5e542844-fc98-4647-a703-24cf2c770806 could not be decoded.
+				// document.getElementById("audio_input_display_js").srcObject = decoded_arraybuffer_blob_url;
 				document.getElementById("audio_input_display_js").srcElement = decoded_arraybuffer_blob_url;
 				
 			})
