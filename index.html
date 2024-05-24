@@ -93,6 +93,9 @@ var API_KEY = "";
 var max_loops = 10;
 
 var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume
+document.getElementById("audio_input_display_js").volume = 0.25; 
 	
 // ----------------------------------------------------
 
@@ -240,7 +243,8 @@ async function previewInput(event) {
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
 				// source.start(0); // WORKS!!
 
-				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+				document.getElementById("audio_input_display_js").srcObject = decoded_arraybuffer_blob_url;
+				
 			})
     
 	}
