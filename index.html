@@ -94,6 +94,8 @@ var max_loops = 10;
 
 var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+// ----------------------------------------------------
+	
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume
 document.getElementById("audio_input_display_js").volume = 0.25; 
 	
@@ -260,12 +262,6 @@ async function previewInput(event) {
 	reader.readAsDataURL(file);  // for Try 0, 1, 2
 }
 
-function finishedLoading(bufferList) {
-
-}
-
-
-	
 // ----------------------------------------------------
 	
 async function processEvent_openai(event) {
