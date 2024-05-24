@@ -100,17 +100,19 @@ async function processEvent_stop_audio(event) {
 
 	console.log('event audioElement: ', event);
 	
-	if (this.getAttribute("pause") == false) {
+	document.getElementById('audio_input_display_js').pause();
+	
+	// if (this.getAttribute("pause") == false) {
 		// document.getElementById('audio_input_display_js').play();
 		
-	//} else if (this.getAttribute("play") == true) {
+	// } else if (this.getAttribute("play") == true) {
 		
-	} else {
-		document.getElementById('audio_input_display_js').pause();
-	}
+	// } else {
+		
+	// }
 }
 	
-document.getElementById('audio_input_display_js').addEventListener("click", processEvent_stop_audio, false);
+document.getElementById('audio_input_display_js').addEventListener("pause", processEvent_stop_audio, false);
 
 // ----------------------------------------------------
 	
