@@ -109,8 +109,6 @@ async function previewInput(event) {
 
 	// Automatic path to the audio on the PC
 	document.getElementById("file_path").innerHTML = event.srcElement.value;
-
-	
 	
 	// ---------------------
 	
@@ -162,23 +160,31 @@ async function previewInput(event) {
 				// ----------------------------
 				
 				// Set the file_download_url
-				// Put the text data in a temporary blob file, and create a url to the data
-				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  // make a global variable
-				
-				// Create a url for the data object
-				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob);
 
+				console.log('file type: ', file.type);
+
+				// Try 0
+				// Put the text data in a temporary blob file, and create a url to the data
+				let decoded_audiobuffer_blob = new Blob([decoded_audiobuffer], { type: file.type });  
+				const decoded_audiobuffer_blob_url = URL.createObjectURL(decoded_audiobuffer_blob); // Create a url for the data object
+
+				// Try 1
 				// Attached the decoded_arraybuffer_blob_url to the audioElement
 				// document.getElementById("audio_input_display_js").src = decoded_audiobuffer_blob_url;
 				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded. index.html
 				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded, error: Error Code: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
 				// Problem: making the blobURL re-encodes the decoded_arraybuffer so the media player can not read the data from the src blob link 
+				// Try 2
+				const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
+				const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
+				let decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });
+				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob); // Create a url for the data object
 
 				// ----------------------------
 
-				// Set path to fetch mp3 file from PC using decoded_audiobuffer_blob_url
-				document.getElementById("file_download_url").value = decoded_audiobuffer_blob_url;
-				document.getElementById('file_download_url').placeholder = decoded_audiobuffer_blob_url;
+				// Set path to fetch mp3 file from PC
+				document.getElementById("file_download_url").value = decoded_arraybuffer_blob_url;
+				document.getElementById('file_download_url').placeholder = decoded_arraybuffer_blob_url;
 
 				// Try 1: use defined path from button click event (C:\fakepath\2024_01_31_09_25_51.mp3)
 				// document.getElementById("file_download_url").value = document.getElementById("file_path").innerHTML;
@@ -219,8 +225,7 @@ async function previewInput(event) {
 				source.connect(audioContext.destination);  // it adds a field in the object source, but did nothing
 					
 				// () => { source.noteOn(0); }  // no audio file loaded
-
-				() => { source.start(); }
+				// () => { source.start(); }  // no audio file loaded
 				
 				console.log("source:", source);
 
@@ -322,7 +327,7 @@ async function transcribe_audio() {
 				
 			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
 				if (dict_out['model_name'] == 'openai') {
-					await call_openai_model_try3(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+					await call_openai_model_try0(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
 						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
 				} else {
 					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
@@ -355,17 +360,12 @@ async function start_processing_notification() {
 
 // ----------------------------------------------------
 
-// Try 0: decoded_arraybuffer_blob_url -> arraybuffer -> blob_object -> file_blob_object
-// Does not work but need to understand why
+// Try 0: path to blob (decoded_arraybuffer_blob_url) -> use fetch to get the actual blob object -> blob_object -> file_blob_object
 async function call_openai_model_try0(file_object, OPENAI_API_KEY) {
-
-	console.log("decoded_arraybuffer_blob_url: ", document.getElementById("file_download_url").value);
 	
 	await start_processing_notification()
-		// Way 0: fetch data from pc (base64 string encoded) - arraybuffer - decode arraybuffer - create blob of decode arraybuffer - obtain url of blob (file_download_url)
 		.then(async function() { return await fetch(document.getElementById("file_download_url").value); })
-		.then(response => response.arrayBuffer())
-		.then(arrayBuffer => { return new Blob(arrayBuffer, {type: "audio/mp3"}); })
+		.then(response => response.blob())
 		.then(async function(blob_object) { 
 			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
 		})
@@ -456,6 +456,8 @@ async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
 			// Way 2
 			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
 			const decoded_arraybuffer = channelData.buffer.slice(0); // Convert to raw ArrayBuffer data
+			// { "error": { "message": "The audio file could not be decoded or its format is not supported.", "type": "invalid_request_error", "param": null, "code": null } }
+			
 			let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
 			return blob_object;
 		})
