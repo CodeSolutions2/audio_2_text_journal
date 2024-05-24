@@ -6,8 +6,8 @@
 <h1>Audio-to-text webapp</h1>
 <ol type="A">
 	<li>Select a model to transcribe audio files.</li>
-	<li>Upload an audio file</li>
-  	<li>View an audio file [audio display].</li>
+	<li>Upload an audio file and view an audio file [audio display].</li>
+  	<li>Select translated transcription or transcription only.</li>
 	<li>Transcribe audio files.</li>
 	<li>Copy paste the transcribed text!</li>
 </ol>
@@ -35,15 +35,19 @@
 <input id="API_KEY" type="text" value="" placeholder="OPENAI_API_KEY" rows="10" cols="100" style="display:none; text-align: left; width: 150px;">
 <br>
 	
-<h3>B. Upload an audio file</h3>
+<h3>B. Upload an audio file and view an audio file [audio display].</h3>
 <input id="file_name" type="text" value="" placeholder="file_name" rows="10" cols="100" style="display:none; text-align: left; width: 600px;">
 <input id="file_download_url" type="text" value="" placeholder="file_download_url" rows="10" cols="100" style="display:none; text-align: left; width: 600px;">
 <input type="file" id="upload_file" accept="audio/*" style="display:block">
 <br>
-
-<h3>C. View an audio file [audio display]</h3>
 <audio controls=true id="audio_input_display_js" preload="auto" style="display:block"></audio>
-	
+<br>
+
+<h3>C. Select translated transcription or transcription only</h3>
+<select name="transcription_method_list" id="transcription_method_list">
+<option value="transcription">Transcription</option>
+<option value="translation">Translation transcription</option>
+</select>
 <br>
 
 <h3>D. Transcribe audio files</h3>
@@ -173,7 +177,6 @@ document.getElementById("custom_model").addEventListener("click", processEvent_c
 
 // ----------------------------------------------------
 
-
 async function transcribe_audio() {
 
 	return await new Promise(r => setTimeout(r, 10))
@@ -199,29 +202,20 @@ async function transcribe_audio() {
 			// console.log("API_KEY: ", API_KEY);
 			return [model_name, API_KEY];
 		})
-		// B. Input one or more audio files: [Option from GitHub] OR [Option upload]
+		// B. Upload an audio file and view an audio file [audio display]
+		// C. Select translated transcription or transcription only
 		.then(async function(array) {
 			
 			// Insert the audio file information into the dictionary
 			total_file_objects = [[{name: document.getElementById("file_name").value, 
 						file_download_url: document.getElementById("file_download_url").value,
-						base64_string: document.getElementById("base64_string").innerHTML
+						base64_string: document.getElementById("base64_string").innerHTML,
+						function_type: document.getElementById("transcription_method_list").value
                              }]];			
 
 			// console.log("total_file_objects: ", total_file_objects);
 			
 			return {total_file_objects: total_file_objects, model_name: array[0], API_KEY: array[1], index: 0};
-		})
-		// C. View an audio file [audio display]
-		.then(async function(dict_out) { 
-
-			// Make the audio player visible
-			document.getElementById("audio_input_display_js").style.display = "block"; 
-
-			// Try to get the audio file from the DOM
-			// console.log("audio: ", document.getElementById("audio_input_display_js"))
-
-			return dict_out;
 		})
 		// D. Transcribe audio files
 		.then(async function(dict_out) {
@@ -235,7 +229,7 @@ async function transcribe_audio() {
 				
 			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
 				if (dict_out['model_name'] == 'openai') {
-					await call_openai_model_try2(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+					await call_openai_model(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
 						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
 				} else {
 					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
@@ -249,7 +243,6 @@ async function transcribe_audio() {
 		
 }
 
-
 // ----------------------------------------------------
 
 
@@ -258,7 +251,6 @@ async function call_custom_model(file_object) {
 	document.getElementById('error').innerHTML = 'Model is in development';
 }
 
-	
 // ----------------------------------------------------
 
 async function start_processing_notification() {
@@ -269,7 +261,7 @@ async function start_processing_notification() {
 // ----------------------------------------------------
 
 // base64_string -> blob -> file_blob_object
-async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
+async function call_openai_model(file_object, OPENAI_API_KEY) {
 	
 	await start_processing_notification()
 		.then(async function() { 
@@ -281,10 +273,10 @@ async function call_openai_model_try2(file_object, OPENAI_API_KEY) {
 			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
 		})
 		.then(async function(file_blob_object) { 
-		 	if (Math.floor(Math.random()*2) == 1) {
-		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	if (file_object.function_type == 'translation') {
+				await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
 		 	} else {
-		 		await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
 		 	}
 		})
 		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
@@ -331,9 +323,7 @@ async function openai_transcription(file_input, which_input, header_string, OPEN
 	
 }
 
-
 // ----------------------------------------------------
-
 	
 async function openai_translation(file_input, which_input, header_string, OPENAI_API_KEY) {
 	
@@ -373,7 +363,6 @@ async function openai_translation(file_input, which_input, header_string, OPENAI
 	
 }
 
-	
 // ----------------------------------------------------
 
 	
