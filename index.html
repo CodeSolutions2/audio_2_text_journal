@@ -43,7 +43,7 @@
 
 <h3>C. View an audio file [audio display]</h3>
 <!-- <audio controls id="audio_input_display" style="display:none"><source id="audio_source_input_display" src="" type="audio/mpeg"></audio> -->
-<audio controls id="audio_input_display_js" preload="auto" style="display:block"></audio>
+<audio controls=true id="audio_input_display_js" preload="auto" style="display:block"></audio>
 	
 <br>
 
@@ -92,14 +92,25 @@ var model_name = "";
 var API_KEY = "";
 var max_loops = 10;
 
-// ----------------------------------------------------
-
-// The eventlistener needs to be always running, to detect which file the user selected with browse
-document.getElementById("upload_file").addEventListener("change", previewInput, false);
-
-// const audioContext = {};
 var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 	
+// ----------------------------------------------------
+
+async function processEvent_stop_audio(event) {
+
+	console.log('event audioElement: ', event);
+	
+	if (this.getAttribute("pause") == true) {
+		document.getElementById('audio_input_display_js').pause();
+	}
+}
+	
+document.getElementById('audio_input_display_js').addEventListener("click", processEvent_stop_audio, false);
+
+// ----------------------------------------------------
+	
+// The eventlistener needs to be always running, to detect which file the user selected with browse
+document.getElementById("upload_file").addEventListener("change", previewInput, false);
 
 async function previewInput(event) {
 	
@@ -225,9 +236,9 @@ async function previewInput(event) {
 				source.connect(audioContext.destination);
 
 				//  To play an entire `source.buffer` using `source` in JavaScript, you can set the `source.start(0)` method to start playing the audio from the beginning.
-				// source.start(0);
+				// source.start(0); // WORKS!!
 
-				document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
 			})
     
 	}
@@ -329,7 +340,7 @@ async function transcribe_audio() {
 				
 			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
 				if (dict_out['model_name'] == 'openai') {
-					await call_openai_model_try3(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+					await call_openai_model_try0(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
 						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
 				} else {
 					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
@@ -423,6 +434,8 @@ async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
 			// Way 3
 			const channelData = decoded_audiobuffer.getChannelData(0); // Get data from the first channel
 			let blob_object = new Blob([channelData], { type: "audio/mp3" });
+			// channelData:  Float32Array(942916) [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, … ]
+			// { "error": { "message": "The audio file could not be decoded or its format is not supported.", "type": "invalid_request_error", "param": null, "code": null } }
 			
 			return blob_object;
 		})
