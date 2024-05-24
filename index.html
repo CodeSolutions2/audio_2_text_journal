@@ -91,8 +91,6 @@ th#outputs {width: 800px; }
 var model_name = "";
 var API_KEY = "";
 var max_loops = 10;
-var decoded_arraybuffer = [];
-var decoded_arraybuffer_blob = "";
 
 // ----------------------------------------------------
 
@@ -159,25 +157,22 @@ async function previewInput(event) {
 			    })
 			.then(async function(decoded_arraybuffer) {
 
-				decoded_arraybuffer = decoded_arraybuffer; // make a global variable
 				console.log("decoded_arraybuffer:", decoded_arraybuffer);
-				
-				// ----------------------------
-				
-				// Create the audio source
-				var source = audioContext.createMediaElementSource(document.getElementById("audio_input_display_js"));
 				
 				// ----------------------------
 				
 				// Set the file_download_url
 				// Put the text data in a temporary blob file, and create a url to the data
-				decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });  // make a global variable
+				let decoded_arraybuffer_blob = new Blob([decoded_arraybuffer], { type: file.type });  // make a global variable
 				
 				// Create a url for the data object
 				const decoded_arraybuffer_blob_url = URL.createObjectURL(decoded_arraybuffer_blob);
 
 				// Attached the decoded_arraybuffer_blob_url to the audioElement
-				document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+				// document.getElementById("audio_input_display_js").src = decoded_arraybuffer_blob_url;
+				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded. index.html
+				// Media resource blob:https://codesolutions2.github.io/1f5749f3-2203-4ef5-8890-0f7fc1768dec could not be decoded, error: Error Code: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
+				// Problem: making the blobURL re-encodes the decoded_arraybuffer so the media player can not read the data from the src blob link 
 
 				// ----------------------------
 
@@ -193,6 +188,10 @@ async function previewInput(event) {
 				// ----------------------------
 
 				// Assign source variables
+
+				// Create the audio source
+				// var source = audioContext.createMediaElementSource(document.getElementById("audio_input_display_js"));
+				var source = audioContext.createBufferSource(document.getElementById("audio_input_display_js"));
 				    
 				// [0] Set the audio source to play the audio file
 				// Way 0: base64 string encoded - does not make sense because is base64 encrypted, it is not an mp3
@@ -217,9 +216,10 @@ async function previewInput(event) {
 				// [3]
 				source.type = file.type;
 
-				// ----------------------------
-
 				source.connect(audioContext.destination);  // it adds a field in the object source, but did nothing
+
+				source.noteOn(0);
+				
 				console.log("source:", source);
 
 				// ----------------------------
@@ -426,18 +426,28 @@ async function call_openai_model_try3(file_object, OPENAI_API_KEY) {
 	// Where is the error?
 	await start_processing_notification()
 		.then(async function() { 
-			console.log('base64_string in transcription: ', file_object.base64_string);
+			// console.log('base64_string in transcription: ', file_object.base64_string); // OK
 			return await fetch(file_object.base64_string); 
 		})
 		.then(response => response.arrayBuffer())
 		.then(async function(arraybuffer) { 
-			console.log('arraybuffer in transcription: ', arraybuffer);
+			// console.log('arraybuffer in transcription: ', arraybuffer); // OK
 			audioContext = new AudioContext(); 
 			return audioContext.decodeAudioData(arraybuffer); 
 		})
 		.then(async function(decoded_arraybuffer) { 
-			console.log('decoded_arraybuffer in transcription: ', decoded_arraybuffer);
-			return new Blob(decoded_arraybuffer, {type: "audio/mp3"}); 
+			// console.log('decoded_arraybuffer in transcription: ', decoded_arraybuffer); // OK
+			// AudioBuffer { sampleRate: 48000, length: 5226162, duration: 108.878375, numberOfChannels: 1 }
+
+			// Create a blob with the decoded_arraybuffer
+			// Way 0
+			// let blob_object = new Blob(decoded_arraybuffer, {type: "audio/mp3"});
+			// This error message will be blank when privacy.resistFingerprinting = true.  If it is really necessary, please add it to the whitelist in MediaError::GetMessage: NS_ERROR_DOM_MEDIA_METADATA_ERR (0x806e0006)
+			// TypeError: Blob constructor: Argument 1 can't be converted to a sequence.
+
+			// Way 1
+			let blob_object = new Blob([decoded_arraybuffer], { type: "audio/mp3" });
+			return blob_object;
 		})
 		.then(async function(decoded_arraybuffer_blob) { 
 			console.log('decoded_arraybuffer_blob in transcription: ', decoded_arraybuffer_blob);
