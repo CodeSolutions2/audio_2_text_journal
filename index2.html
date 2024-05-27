@@ -130,16 +130,16 @@ async function previewInput(event) {
 
 	const reader = new FileReader();
 	
-	reader.onload = async function(e){
-
+	//reader.onload = async function(e){
+	reader.addEventListener("load", (e) => {
 		// Save base64_string to DOM 
 		// console.log("e.target.result :", e.target.result);
 		document.getElementById("base64_string").innerHTML = e.target.result;
 
-    // ---------------------
+    		// ---------------------
     
-    // Print error or data to page
-    document.getElementById('notification').innerHTML += e.target.error;
+    		// Print error or data to page
+    		document.getElementById('notification').innerHTML += e.target.error;
 
 		// ---------------------
 
@@ -151,7 +151,10 @@ async function previewInput(event) {
 			})
 
 		// ---------------------
-	}
+	}, false, );
+
+
+	
 	reader.readAsDataURL(file);
 }
 
