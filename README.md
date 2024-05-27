@@ -12,3 +12,5 @@ Ask yourself questions about the things you talked about in your journal to obta
 
 
 https://codesolutions2.github.io/audio_2_text_journal/index2.html
+
+https://codesolutions2.github.io/audio_2_text_journal/fileread_test.html
