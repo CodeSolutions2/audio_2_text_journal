@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>    
+
+<h1>Audio-to-text webapp</h1>
+<ol type="A">
+	<li>Select a model to transcribe audio files.</li>
+	<li>Upload an audio file and view an audio file [audio display].</li>
+  	<li>Select translated transcription or transcription only.</li>
+	<li>Transcribe audio files.</li>
+	<li>Copy paste the transcribed text!</li>
+</ol>
+
+<!-- ---------------------------------------- -->
+<hr>
+<!-- ---------------------------------------- -->
+<!-- View two split window -->
+<div align="left">
+<table style='text-align: left; width: 300px; display:block'>
+<tr>
+        
+<th id="inputs">
+
+<h3>A. Select a model to transcribe audio files</h3>
+<fieldset>
+<input type="radio" id="openai" name="radio_name0" value="openai" />
+<label for="openai">OpenAI Whisper</label>
+<br>
+<input type="radio" id="custom_model" name="radio_name0" value="custom_model" />
+<label for="custom_model">Custom Model</label>
+</fieldset>
+<br>
+<label for="enter_key" id="enter_key" style="display:none">Enter OpenAI Key:</label>
+<input id="API_KEY" type="text" value="" placeholder="OPENAI_API_KEY" rows="10" cols="100" style="display:none; text-align: left; width: 150px;">
+<br>
+	
+<h3>B. Upload an audio file and view an audio file [audio display].</h3>
+<input id="file_name" type="text" value="" placeholder="file_name" rows="10" cols="100" style="display:none; text-align: left; width: 600px;">
+<input id="file_download_url" type="text" value="" placeholder="file_download_url" rows="10" cols="100" style="display:none; text-align: left; width: 600px;">
+<input type="file" id="upload_file" accept="audio/*" style="display:block" multiple/>
+<br>
+<audio controls=true id="audio_input_display_js" preload="auto" style="display:block"></audio>
+<br>
+
+<h3>C. Select translated transcription or transcription only</h3>
+<select name="transcription_method_list" id="transcription_method_list">
+<option value="transcription">Transcription</option>
+<option value="translation">Translation transcription</option>
+</select>
+<br>
+
+<h3>D. Transcribe audio files</h3>
+<button id="transcribe_audio" onclick="transcribe_audio()" style="display:block">Transcribe audios</button>
+
+</th>
+	
+<!-- ---------------------------------------- -->
+
+<th id="outputs">
+<div id="notification"></div>
+<div id="error"></div>
+<div id="file_path" style="display:none"></div>
+<div id="base64_string" style="display:none"></div>
+</th>
+	
+</tr>
+</table>
+</div>  
+	
+<!-- ---------------------------------------- -->
+<!-- CSS -->
+<style>
+div { padding: 10px; display:block; font-family:courier; font-size:15px; height:300px; }
+	
+div#notification { position: relative; color: #3236a8; }
+div#error { position: relative; color: #bd1f17; }
+
+table {vertical-align: top; border-collapse: collapse; position: relative; z-index: 0; border: 0px solid black;}
+
+tr {vertical-align: top; border: 0px solid black; padding: 10px 10px; width: 800px; }
+
+th, td {vertical-align: top; border: 0px solid black; padding: 10px; width: 800px; }
+th#inputs {width: 500px; }
+th#outputs {width: 800px; }
+</style>
+	
+<!-- --------------------------------------------------- -->
+	  
+
+	  
+<script>
+
+var model_name = "";
+var API_KEY = "";
+var max_loops = 10;
+
+// ----------------------------------------------------
+	
+// https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume
+document.getElementById("audio_input_display_js").volume = 0.1; 
+	
+// ----------------------------------------------------
+	
+// The eventlistener needs to be always running, to detect which file the user selected with browse
+document.getElementById("upload_file").addEventListener("change", previewInput, false);
+
+async function previewInput(event) {
+	
+	// ---------------------
+	
+	// console.log("event :", event);
+
+	// Automatic path to the audio on the PC
+	document.getElementById("file_path").innerHTML = event.srcElement.value;
+	
+	// ---------------------
+	
+	// Take the first file
+	const file = event.target.files[0];  // first file in the list of selected files, better for selecting multiple files at one time
+	// console.log("file :", file);
+
+	// ---------------------
+	
+	// Set the file name
+	document.getElementById("file_name").value = file.name;
+	document.getElementById('file_name').placeholder = file.name;
+
+	// ---------------------
+
+	const reader = new FileReader();
+	
+	reader.onload = async function(e){
+
+		// Save base64_string to DOM 
+		// console.log("e.target.result :", e.target.result);
+		document.getElementById("base64_string").innerHTML = e.target.result;
+
+		// ---------------------
+
+		// Send the audio to the audioElement
+		await fetch(e.target.result)
+			.then(response => response.blob())
+			.then(async function(blob_object) {
+				document.getElementById("audio_input_display_js").src = URL.createObjectURL(blob_object);
+			})
+
+		// ---------------------
+	}
+	reader.readAsDataURL(file);
+}
+
+// ----------------------------------------------------
+	
+async function processEvent_openai(event) {
+	if (this.getAttribute("checked") == false) {
+		document.getElementById("enter_key").style.display = "none";
+		document.getElementById("API_KEY").style.display = "none";
+	} else  {
+		document.getElementById("enter_key").style.display = "block";
+		document.getElementById("API_KEY").style.display = "block";
+	}
+}
+
+async function processEvent_custom_model(event) {
+	if (this.getAttribute("checked") == false) {
+		document.getElementById("enter_key").style.display = "none";
+		document.getElementById("API_KEY").style.display = "none";
+	} else  {
+		document.getElementById("enter_key").style.display = "none";
+		document.getElementById("API_KEY").style.display = "none";
+	}
+}
+	
+document.getElementById("openai").addEventListener("click", processEvent_openai, false);
+document.getElementById("custom_model").addEventListener("click", processEvent_custom_model, false);
+
+// ----------------------------------------------------
+
+async function transcribe_audio() {
+
+	return await new Promise(r => setTimeout(r, 10))
+		// A. Select a model to transcribe audio files
+		.then(async function() {
+			const openai = document.getElementById("openai").checked;
+			const custom_model = document.getElementById("custom_model").checked;
+	
+			if (openai == true && custom_model == false) {
+				model_name = 'openai';
+				API_KEY = document.getElementById("API_KEY").value;
+			}
+			
+			if (openai == false && custom_model == true) {
+				model_name = 'custom_model';
+			}
+			
+			if (openai == false && custom_model == false) {
+				document.getElementById('error').innerHTML += "Select a model.";
+			}
+			
+			// console.log("model_name: ", model_name);
+			// console.log("API_KEY: ", API_KEY);
+			return [model_name, API_KEY];
+		})
+		// B. Upload an audio file and view an audio file [audio display]
+		// C. Select translated transcription or transcription only
+		.then(async function(array) {
+			
+			// Insert the audio file information into the dictionary
+			total_file_objects = [[{name: document.getElementById("file_name").value, 
+						file_download_url: document.getElementById("file_download_url").value,
+						base64_string: document.getElementById("base64_string").innerHTML,
+						function_type: document.getElementById("transcription_method_list").value
+                             }]];			
+
+			// console.log("total_file_objects: ", total_file_objects);
+			
+			return {total_file_objects: total_file_objects, model_name: array[0], API_KEY: array[1], index: 0};
+		})
+		// D. Transcribe audio files
+		.then(async function(dict_out) {
+			
+			const total_files = dict_out['total_file_objects'][0].length;
+			// console.log("dict_out['total_file_objects']:", dict_out['total_file_objects']);
+			// console.log("total_files :", total_files);
+			// console.log("dict_out['index'] :", dict_out['index']);
+			// console.log("total_files-1 :", total_files-1);
+			// console.log("max_loops :", max_loops);
+				
+			while (dict_out['index'] < total_files && dict_out['index'] < max_loops) {
+				if (dict_out['model_name'] == 'openai') {
+					await call_openai_model(dict_out['total_file_objects'][0][dict_out['index']], dict_out['API_KEY'])
+						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
+				} else {
+					await call_custom_model(dict_out['total_file_objects'][0][dict_out['index']])
+						.then(async function() { await new Promise(r => setTimeout(r, 5000)); })
+				}
+			    
+				dict_out['index'] = dict_out['index'] + 1;
+			}
+		})
+		.catch(error => { document.getElementById('error').innerHTML += error; });
+		
+}
+
+// ----------------------------------------------------
+
+
+async function call_custom_model(file_object) {
+
+	document.getElementById('error').innerHTML = 'Model is in development';
+}
+
+// ----------------------------------------------------
+
+async function start_processing_notification() {
+	// Processing information
+	document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + 'Processing audio\n';
+}
+
+// ----------------------------------------------------
+
+// base64_string -> blob -> file_blob_object
+async function call_openai_model(file_object, OPENAI_API_KEY) {
+	
+	await start_processing_notification()
+		.then(async function() { 
+			// console.log('base64_string in transcription: ', file_object.base64_string); // OK
+			return await fetch(file_object.base64_string); 
+		})
+		.then(response => response.blob())
+		.then(async function(blob_object) { 
+			return new File ([blob_object], file_object.name, {type: "audio/mp3"});
+		})
+		.then(async function(file_blob_object) { 
+		 	if (file_object.function_type == 'translation') {
+				await openai_translation(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	} else {
+		 		await openai_transcription(file_blob_object, 'file_blob_object', file_object.name, OPENAI_API_KEY);
+		 	}
+		})
+		.then(async function() { document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + '\n\nTranscription Processing Done'; })
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+}
+
+// ----------------------------------------------------
+
+async function openai_transcription(file_input, which_input, header_string, OPENAI_API_KEY) {
+	
+	const url = 'https://api.openai.com/v1/audio/transcriptions';
+
+	const headers = new Headers();
+	headers.append("Authorization", 'Bearer ' + OPENAI_API_KEY);
+	headers.append("Accept", "application/json");
+	
+	const formData = new FormData();
+	if (which_input == 'blob_object') {
+		formData.append("file", file_input);
+	} else {
+		// using a file_blob_object
+		formData.append("file", file_input, header_string); // mp3, mp4, mpeg, mpga, m4a, wav, or webm
+	}
+	formData.append("model", "whisper-1");
+	formData.append("prompt", "Transcribe the audio");  // Style context for the transcription
+	formData.append("response_format", "text");  // json, text, srt, verbose_json, or vtt
+	formData.append("temperature", "0");  // The sampling temperature, between 0 (accurate) and 1 (random response)
+	formData.append("language", "en");
+	formData.append("transcription", "plain text"); // plain text, srt, vtt
+	
+	const options = {method: 'POST', 
+		       headers: headers, 
+		       body: formData,
+		       redirect: "follow"
+		      };
+	
+	// Print text part of JSON response only with user message
+	await fetch(url, options)
+		.then(response => response.text())
+		.then(async function(result) { 
+			document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + `openai_transcription\n${header_string}\n\n${result}\n\n`; 
+		})
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+	
+}
+
+// ----------------------------------------------------
+	
+async function openai_translation(file_input, which_input, header_string, OPENAI_API_KEY) {
+	
+	const url = 'https://api.openai.com/v1/audio/translations';
+
+	const headers = new Headers();
+	headers.append("Authorization", 'Bearer ' + OPENAI_API_KEY);
+	headers.append("Accept", "application/json");
+	
+	const formData = new FormData();
+	if (which_input == 'blob_object') {
+		formData.append("file", file_input);
+	} else {
+		// using a file_blob_object
+		formData.append("file", file_input, header_string); // mp3, mp4, mpeg, mpga, m4a, wav, or webm
+	}
+	formData.append("model", "whisper-1");
+	formData.append("prompt", "Transcribe the audio");  // Style context for the transcription
+	formData.append("response_format", "text");  // json, text, srt, verbose_json, or vtt
+	formData.append("temperature", "0");  // The sampling temperature, between 0 (accurate) and 1 (random response)
+	formData.append("language", "en");
+	formData.append("transcription", "plain text"); // plain text, srt, vtt
+	
+	const options = {method: 'POST', 
+		       headers: headers, 
+		       body: formData,
+		       redirect: "follow"
+		      };
+	
+	// Print text part of JSON response only with user message
+	return await fetch(url, options)
+		.then(response => response.text())
+		.then(async function(result) { 
+			document.getElementById('notification').innerHTML = document.getElementById('notification').innerHTML + `openai_translation\n${header_string}\n${result}\n\n`; 
+		})
+		.catch(error => { document.getElementById('error').innerHTML = error; });
+	
+}
+
+// ----------------------------------------------------
+
+	
+</script>
+
+  </body>
+</html>
