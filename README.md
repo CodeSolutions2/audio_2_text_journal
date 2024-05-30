@@ -9,9 +9,3 @@ Ask yourself questions about the things you talked about in your journal to obta
 [**Upload your data to the FrontEnd App Here**] https://codesolutions2.github.io/audio_2_text_journal/index.html
 
 ![alt_text](audio_2_text.png)
-
-https://codesolutions2.github.io/audio_2_text_journal/test.html
-
-
-Test
-https://web.dev/articles/read-files?hl=en
