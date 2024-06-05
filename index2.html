@@ -136,27 +136,24 @@ async function previewInput(event) {
 		// console.log("e.target.result :", e.target.result);
 		document.getElementById("base64_string").innerHTML = e.target.result;
 
-    // ---------------------
+	// ---------------------
 
-    // Remove existing file blobURLs before loading
-    console.log('audio_input_display_js.src: ', document.getElementById("audio_input_display_js").src);
-    console.log('audio_input_display_js.src.length: ', document.getElementById("audio_input_display_js").src.length);
+	// Remove existing file blobURLs before loading
+	if (document.getElementById("audio_input_display_js").src.length > 0) {
+		// a file was loaded before, so remove the blob URL from memory to use resources effectively
+		URL.revokeObjectURL(document.getElementById("audio_input_display_js").src);
+	}
     
-    if (document.getElementById("audio_input_display_js").src.length > 0) {
-      // a file was loaded before, so remove the blob URL from memory to use resources effectively
-      URL.revokeObjectURL(document.getElementById("audio_input_display_js").src);
-    }
-    
-		// ---------------------
+	// ---------------------
 
-		// Send the audio to the audioElement
-		await fetch(e.target.result)
+	// Send the audio to the audioElement
+	await fetch(e.target.result)
 			.then(response => response.blob())
 			.then(async function(blob_object) {
 				document.getElementById("audio_input_display_js").src = URL.createObjectURL(blob_object);
-      })
+	})
 
-		// ---------------------
+	// ---------------------
 
     
 	}
